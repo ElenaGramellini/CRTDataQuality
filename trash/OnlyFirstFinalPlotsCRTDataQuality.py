@@ -37,9 +37,9 @@ def __main__():
     inputFileList = []
     for d in dirs:
         if "CRT_DQ" in d:
-            if ".root" in d:
+            if "01.root" in d:
                 inputFileList.append(d)
-                print d
+
 
     inputFileList.sort()
     # Get the Feb index... this is awful, but ok
@@ -79,12 +79,11 @@ def __main__():
             histoTemp2.SetLineColor(kGreen)
 
             # Michelle's Smarter plots
-            if entriesList[i]>0 and totNumberList[i] > 0:
-                hHitsOverEvtBin = float(totNumberList[i])/float(entriesList[i])
-                hHitsOverEvtErr = hHitsOverEvtBin * TMath.Sqrt( 1./float(totNumberList[i]) + 1./float(entriesList[i])  )
-                hHitsOverEvt.SetBinContent(iFile+1 ,hHitsOverEvtBin)
-                hHitsOverEvt.SetBinError(iFile+1   ,hHitsOverEvtErr)
-                hHitsOverEvt.GetXaxis().SetBinLabel(iFile+1,thisDateName)
+            hHitsOverEvtBin = float(totNumberList[i])/float(entriesList[i])
+            hHitsOverEvtErr = hHitsOverEvtBin * TMath.Sqrt( 1./float(totNumberList[i]) + 1./float(entriesList[i])  )
+            hHitsOverEvt.SetBinContent(iFile+1 ,hHitsOverEvtBin)
+            hHitsOverEvt.SetBinError(iFile+1   ,hHitsOverEvtErr)
+            hHitsOverEvt.GetXaxis().SetBinLabel(iFile+1,thisDateName)
 
         histoList.append(histoTemp)    
         histoList.append(histoTemp2)    
@@ -92,7 +91,7 @@ def __main__():
 
 
     # Out File
-    outFile = TFile("CRTDataQuality_RatePerDate.root","recreate")
+    outFile = TFile("OnlyFirstCRTDataQuality_RatePerDate.root","recreate")
     for h in histoList:
         outFile.Add(h)
     outFile.Write()

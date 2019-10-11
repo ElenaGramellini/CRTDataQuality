@@ -28,13 +28,19 @@ def CalculateChi2 ( histo , f1 , c ):
     c.cd()
     c.SetLogy()
     lambda_pois = histo.GetMean()
+
+    totNumbHits = 0
+    for i in xrange(1,histo.GetSize()-2):
+        totNumbHits += histo.GetBinContent(i) * (i -1)
+    #print "totNumbHits", totNumbHits
+    #histo.Draw("text")
     histo.Scale(1./histo.Integral())
     f1.SetParameter(0,lambda_pois)
     fitResult = histo.Fit(f1,"S")
     histo.Draw("")
     f1.Draw("same")
     c.Update()
-    return lambda_pois, f1.GetChisquare(), f1.GetNDF(), f1.GetProb(), histo.GetEntries(), f1.GetParError(0)
+    return lambda_pois, f1.GetChisquare(), f1.GetNDF(), f1.GetProb(), histo.GetEntries(), f1.GetParError(0), totNumbHits
     '''
     # This is me trying to understand what ROOT is doing
     nBins =  histo.GetSize() - 1 
@@ -76,23 +82,25 @@ def analyze(date, eventList, febIndex, originalReadoutTime):
 
     # Create Summary TTree
     t = TTree( 'summaryTree', 'ttree which sums up the crt data quality' )
-    febName  = array( 'i', [ 0 ] )
-    entries  = array( 'i', [ 0 ] )
-    nHitMean = array( 'd', [ 0 ] )
-    nHitRMS  = array( 'd', [ 0 ] )
-    chi2     = array( 'd', [ 0 ] )
-    dof      = array( 'd', [ 0 ] )
-    prob     = array( 'd', [ 0 ] )
-    readoutT = array( 'd', [ 0 ] )
+    febName     = array( 'i', [ 0 ] )
+    entries     = array( 'i', [ 0 ] )
+    nHitMean    = array( 'd', [ 0 ] )
+    nHitRMS     = array( 'd', [ 0 ] )
+    chi2        = array( 'd', [ 0 ] )
+    dof         = array( 'd', [ 0 ] )
+    prob        = array( 'd', [ 0 ] )
+    readoutT    = array( 'd', [ 0 ] )
+    totNumbHits = array( 'i', [ 0 ] )
 
-    t.Branch( 'febName' , febName , 'febName/I' )
-    t.Branch( 'entries' , entries , 'entries/I' )
-    t.Branch( 'nHitMean', nHitMean, 'nHitMean/D')
-    t.Branch( 'nHitRMS' , nHitRMS , 'nHitRMS/D' )
-    t.Branch( 'chi2'    , chi2    , 'chi2/D'    )
-    t.Branch( 'dof'     , dof     , 'dof/D'     )
-    t.Branch( 'prob'    , prob    , 'prob/D'    )
-    t.Branch( 'readoutT', readoutT, 'readoutT/D')
+    t.Branch( 'febName'    , febName    , 'febName/I' )
+    t.Branch( 'entries'    , entries    , 'entries/I' )
+    t.Branch( 'nHitMean'   , nHitMean   , 'nHitMean/D')
+    t.Branch( 'nHitRMS'    , nHitRMS    , 'nHitRMS/D' )
+    t.Branch( 'chi2'       , chi2       , 'chi2/D'    )
+    t.Branch( 'dof'        , dof        , 'dof/D'     )
+    t.Branch( 'prob'       , prob       , 'prob/D'    )
+    t.Branch( 'readoutT'   , readoutT   , 'readoutT/D')
+    t.Branch( 'totNumbHits', totNumbHits, 'totNumbHits/I')
 
 
     # Fit the Histograms, store the results
@@ -102,14 +110,15 @@ def analyze(date, eventList, febIndex, originalReadoutTime):
         result = CalculateChi2(histoList[i],fitFunct[i],c)
         
         # Fill the ttree
-        febName [ 0 ] = int( febIndex[i] )
-        entries [ 0 ] = int( result[4] )
-        nHitMean[ 0 ] = result[0] 
-        nHitRMS [ 0 ] = result[5]
-        chi2    [ 0 ] = result[1]
-        dof     [ 0 ] = result[2]
-        prob    [ 0 ] = result[3]
-        readoutT[ 0 ] = readoutTime
+        febName    [ 0 ] = int( febIndex[i] )
+        entries    [ 0 ] = int( result[4] )
+        nHitMean   [ 0 ] = result[0] 
+        nHitRMS    [ 0 ] = result[5]
+        chi2       [ 0 ] = result[1]
+        dof        [ 0 ] = result[2]
+        prob       [ 0 ] = result[3]
+        readoutT   [ 0 ] = readoutTime
+        totNumbHits[ 0 ] = int( result[6] ) 
         t.Fill()
 
 

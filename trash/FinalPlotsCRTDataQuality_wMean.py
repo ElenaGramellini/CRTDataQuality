@@ -39,7 +39,7 @@ def __main__():
         if "CRT_DQ" in d:
             if ".root" in d:
                 inputFileList.append(d)
-                print d
+
 
     inputFileList.sort()
     # Get the Feb index... this is awful, but ok
@@ -56,7 +56,7 @@ def __main__():
         histoTemp    = TH1D("nHitsCRT_FEB_" +str(febIndex[i]),"nHitsCRT_FEB"+str(febIndex[i])+"; Date ; Raw Hit Rate  ",nBins,-0.5,nBins-0.5)
         histoTemp2   = TH1D("nHitsCRT_FEB2_"+str(febIndex[i]),"nHitsCRT_FEB2_"+str(febIndex[i])+"; Date ; Raw Hit Rate  ",nBins,-0.5,nBins-0.5)
         hHitsOverEvt = TH1D("hHitsOverEvt_FEB_"+str(febIndex[i]),"hHitsOverEvt_FEB"+str(febIndex[i])+"; Date ; Raw Hit Rate  ",nBins,-0.5,nBins-0.5)
-
+        avgRate      = TH1D("avgRate_FEB_"+str(febIndex[i]),"avgRate_FEB"+str(febIndex[i])+"; Uncorrexted Rate ;  ",1000,0,10)
 
         for iFile in xrange(len(inputFileList)):
             f = inputFileList[iFile]
@@ -79,20 +79,22 @@ def __main__():
             histoTemp2.SetLineColor(kGreen)
 
             # Michelle's Smarter plots
-            if entriesList[i]>0 and totNumberList[i] > 0:
-                hHitsOverEvtBin = float(totNumberList[i])/float(entriesList[i])
-                hHitsOverEvtErr = hHitsOverEvtBin * TMath.Sqrt( 1./float(totNumberList[i]) + 1./float(entriesList[i])  )
-                hHitsOverEvt.SetBinContent(iFile+1 ,hHitsOverEvtBin)
-                hHitsOverEvt.SetBinError(iFile+1   ,hHitsOverEvtErr)
-                hHitsOverEvt.GetXaxis().SetBinLabel(iFile+1,thisDateName)
+            hHitsOverEvtBin = float(totNumberList[i])/float(entriesList[i])
+            hHitsOverEvtErr = hHitsOverEvtBin * TMath.Sqrt( 1./float(totNumberList[i]) + 1./float(entriesList[i])  )
+            hHitsOverEvt.SetBinContent(iFile+1 ,hHitsOverEvtBin)
+            hHitsOverEvt.SetBinError(iFile+1   ,hHitsOverEvtErr)
+            hHitsOverEvt.GetXaxis().SetBinLabel(iFile+1,thisDateName)
+            if "12" not in thisDateName:
+                avgRate.Fill(hHitsOverEvtBin)
 
         histoList.append(histoTemp)    
         histoList.append(histoTemp2)    
         histoList.append(hHitsOverEvt)    
+        histoList.append(avgRate)    
 
 
     # Out File
-    outFile = TFile("CRTDataQuality_RatePerDate.root","recreate")
+    outFile = TFile("CRTDataQuality_RatePerDate_wMean.root","recreate")
     for h in histoList:
         outFile.Add(h)
     outFile.Write()

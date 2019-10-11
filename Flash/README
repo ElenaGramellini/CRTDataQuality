@@ -1,0 +1,5 @@
+run 
+> python FlashCRTDataQuality.py <filename>
+
+run 
+> python FlashFinalPlotsCRTDataQuality.py
