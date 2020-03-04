@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+
+
 # Python macro from Elena Gramellini on April 3rd 2019
 # Analyze the output of CRT data quality monitor, 
 # Outputs summary of CRT hit frequency in each panel for each date
@@ -11,7 +14,9 @@ import pprint
 import copy
 from array import array
 
-
+# Sort of profiling what I'm doing
+import time
+start_time = time.time()
 
 # I need to re-define an event cause the ROOT memory management is horrific
 # So, when looping on the TTree, I'll construct my own event class
@@ -24,43 +29,20 @@ class event:
 
 
 # Let's see how distant the histograms are from the poisson distribution with the same mean
-def CalculateChi2 ( histo , f1 , c ):
-    c.cd()
-    c.SetLogy()
+def CalculateChi2 ( histo , f1 ):
     lambda_pois = histo.GetMean()
-
     totNumbHits = 0
     for i in xrange(1,histo.GetSize()-2):
         totNumbHits += histo.GetBinContent(i) * (i -1)
-    #print "totNumbHits", totNumbHits
-    #histo.Draw("text")
     histo.Scale(1./histo.Integral())
     f1.SetParameter(0,lambda_pois)
-    fitResult = histo.Fit(f1,"S")
-    histo.Draw("")
-    f1.Draw("same")
-    c.Update()
+    fitResult = histo.Fit(f1,"SQ")
     return lambda_pois, f1.GetChisquare(), f1.GetNDF(), f1.GetProb(), histo.GetEntries(), f1.GetParError(0), totNumbHits
-    '''
-    # This is me trying to understand what ROOT is doing
-    nBins =  histo.GetSize() - 1 
-    dof = -1
-    for i in xrange(1,nBins): 
-        myHistoVal = histo.GetBinContent(i)
-        poissonian = f1.Eval(histo.GetBinCenter(i))
-        print i, myHistoVal, poissonian, (myHistoVal-poissonian), chi2
-        if (myHistoVal):
-            dof +=1
-            pearson = (myHistoVal-poissonian)*(myHistoVal-poissonian)/myHistoVal
-            chi2 += pearson 
-    #chi2 = TMath.Sqrt(chi2/nBins)
-    return chi2*histo.Entries(), dof
-    '''
+
 
 # function that analyzes events in one date
 def analyze(date, eventList, febIndex, originalReadoutTime):
-
-    outFile = TFile("CRT_DQ_"+str(date)+".root","recreate")
+    outFile = TFile("rootFilesUncorrectedRates/CRT_DQ_"+str(date)+".root","recreate")
     # Declare the final histograms
     histoList = []
     fitFunct  = []
@@ -77,8 +59,6 @@ def analyze(date, eventList, febIndex, originalReadoutTime):
     for e in eventList:
         for i in xrange(len(histoList)):
             histoList[i].Fill(e.nCRThits[i])
-
-
 
     # Create Summary TTree
     t = TTree( 'summaryTree', 'ttree which sums up the crt data quality' )
@@ -102,13 +82,10 @@ def analyze(date, eventList, febIndex, originalReadoutTime):
     t.Branch( 'readoutT'   , readoutT   , 'readoutT/D')
     t.Branch( 'totNumbHits', totNumbHits, 'totNumbHits/I')
 
-
-    # Fit the Histograms, store the results
+    # for each module, calculate the paramters with the CalculateChi2 function
     for i in xrange(len(histoList)):
-        c = TCanvas("c"+str(date)+str(febIndex[i]), "c", 500,500)
-        c.cd()
-        result = CalculateChi2(histoList[i],fitFunct[i],c)
-        
+        # All the calculation happens here
+        result = CalculateChi2(histoList[i],fitFunct[i])
         # Fill the ttree
         febName    [ 0 ] = int( febIndex[i] )
         entries    [ 0 ] = int( result[4] )
@@ -121,7 +98,6 @@ def analyze(date, eventList, febIndex, originalReadoutTime):
         totNumbHits[ 0 ] = int( result[6] ) 
         t.Fill()
 
-
     # Save Output Files
     outFile.Write()
     outFile.Close()
@@ -130,6 +106,7 @@ def analyze(date, eventList, febIndex, originalReadoutTime):
 
 # In the main, we read the input file and divide events by dates
 def __main__():
+    
     # Get input file
     parser = argparse.ArgumentParser()
     parser.add_argument("input"     , nargs='?', default = "", type = str, help="insert input filename")
@@ -140,7 +117,7 @@ def __main__():
     myTree =  inFile.Get("CRTDataQuality/CRTDataQuality")
     
 
-    
+
     # Get info which will be the same for all entries from the first entry
     # It's kind of barbaric, but I can't think of another way
     febIndex            = []
@@ -151,8 +128,6 @@ def __main__():
         break
 
     print "Original readout time", originalReadoutTime
-    
-
 
     # Get the list of dates in this file, which we're going to use as keys to an event dictionary
     # Declare an empty set, dictionary and list
@@ -177,19 +152,20 @@ def __main__():
         else:
             myEvtDict[thisDate].append(thisEvent)
 
-
+    #print time.time() - start_time, "3" 
     # Great, now I should have a dictionary containing 
     # {date : list of events for that date}
     # we'll loop on the date and save in a out root file :
     # hitMean[72], chi2[72], dof[72], probability for poissonian fit [72], readout time
-
+    
     for key, value in myEvtDict.iteritems() :
+        print time.time() - start_time
         analyze(key,value,febIndex, originalReadoutTime)
 
-    
+    #print time.time() - start_time, "4" 
 
 __main__()
-
+print time.time() - start_time 
 
 
 

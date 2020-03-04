@@ -33,12 +33,12 @@ import os, sys
 
 
 def __main__():
-    dirs = os.listdir(".")
+    dirs = os.listdir("rootFilesUncorrectedRates")
     inputFileList = []
     for d in dirs:
         if "CRT_DQ" in d:
             if ".root" in d:
-                inputFileList.append(d)
+                inputFileList.append("rootFilesUncorrectedRates/"+d)
                 print d
 
     inputFileList.sort()
@@ -92,7 +92,7 @@ def __main__():
 
 
     # Out File
-    outFile = TFile("CRTDataQuality_RatePerDate.root","recreate")
+    outFile = TFile("perDatePlots/CRTDataQuality_RatePerDateUncorrectedRate.root","recreate")
     for h in histoList:
         outFile.Add(h)
     outFile.Write()

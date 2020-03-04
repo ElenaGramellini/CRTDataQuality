@@ -10,7 +10,8 @@ from sets import Set
 import pprint
 import copy
 from array import array
-
+import time 
+startTime = time.time()
 
 
 # I need to re-define an event cause the ROOT memory management is horrific
@@ -26,7 +27,7 @@ class event:
 # function that analyzes events in one date
 def analyze(date, eventList):
 
-    outFile = TFile("Flash_CRT_DQ_"+str(date)+".root","recreate")
+    outFile = TFile("rootFilesFlashMatch/Flash_CRT_DQ_"+str(date)+".root","recreate")
     # Declare the final histograms
     histoF  = TH1D("nFlashes"       ,"N Flashes; N Flashes; Count ",70,-0.5,69.5)
     histoFM = TH1D("nFlashesMatched","N Flashes Matched; N Matched; Count ",70,-0.5,69.5)
@@ -89,9 +90,10 @@ def __main__():
     # hitMean[72], chi2[72], dof[72], probability for poissonian fit [72], readout time
 
     for key, value in myEvtDict.iteritems() :
+        print time.time() - startTime
         analyze(key,value)
 
-    
+    print time.time() - startTime
 
 __main__()
 
